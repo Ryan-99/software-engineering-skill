@@ -24,7 +24,8 @@
 ````
 
 - 轻量档 gates 固定为 `["GB","GD","G4","G5"]`；完整档固定为 `["G0","G1","G2","G3","EXEC","G4","G5"]`（EXEC 无文档，标记执行期开始/结束）。
-- status 取值：pending / draft / in-review / confirmed / bypassed；confirmed 必带 `confirmed_at`(YYYY-MM-DD)，bypassed 必带 `"reason": "<用户原话或理由>"`（直接写在 gate 对象上）。
+- status 取值：pending / draft / in-review / confirmed / bypassed；confirmed 必带 `confirmed_at`(YYYY-MM-DD)，bypassed 必带 `"reason": "<用户原话或理由>"`（直接写在 gate 对象上）。确认打包见 SKILL.md 确认分层。
+- gate 对象可选字段 `"agent_review": {"date": "…", "verdict": "pass|revise", "issues": 0}`——gate-reviewer 初审结论落账，审计链可查（机械校验器不校验此字段）。
 - 确认发生的那一刻立即写入此文件；聊天记忆不算确认记录。
 
 ## BRIEF.md（轻量档：GB=立项+需求）

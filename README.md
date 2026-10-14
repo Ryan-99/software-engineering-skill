@@ -18,19 +18,20 @@ PROJECT.md  REQUIREMENTS  ARCHITECTURE  PLAN.md   控制器+子代理生产     
 
 | 层 | 机制 | 防什么 |
 |---|---|---|
-| 门禁层 | 每阶段产出文档 → 用户确认 → 才进下一阶段；轻量档合并为 2 次确认 | 方向跑偏、需求变形 |
+| 门禁层 | 每阶段产出文档 → **质量归代理（gate-reviewer 初审）、方向归人（决策卡 ≤10 行）**；确认按决策包打包：完整档 3 包、轻量档 2 次 | 方向跑偏、需求变形、人工确认疲劳 |
 | 状态层 | `docs/pipeline.json` 是唯一真源：聊天记忆不算确认记录，确认即刻落账；跨会话冷启动三件套接手 | 遗忘漂移、重复劳动 |
 | 机械层 | `check_gate.mjs` 校验门禁顺序、文档必备小节、FR 块完整性（描述+优先级+AC-x.y 验收标准）、G4 对每条 AC 的追溯 | 结构走样、验收蒙混 |
 
 ## Agent 编排（执行层）
 
-四类角色提示词模板随技能出厂（`assets/agents/`），首次执行一键物化到项目 `.agents/`：
+五类角色提示词模板随技能出厂（`assets/agents/`），首次执行一键物化到项目 `.agents/`：
 
 | 角色 | 职责 |
 |---|---|
 | `implementer` | 实现：先失败测试再实现（TDD）、YAGNI、全量套件绿 |
 | `spec-reviewer` | 需求符合评审：不信自述、逐条对照 AC、缺失/多余/误解 |
 | `quality-reviewer` | 质量评审：BASE..HEAD 只读 diff、严重度校准、搁置清单 |
+| `gate-reviewer` | 门禁审核：文档提交给人之前的四层初审（完整性/一致性/质量/决策提炼），人只看决策卡 |
 | `explorer` | 代码勘察：brownfield 项目先摸现状，只回结论 |
 
 硬纪律：主会话是控制器**不写业务代码**；子代理默认零记忆（任务卡自包含到接口签名）；**验证不信自述**（每任务可执行验证命令，控制器亲自跑绿）；同一任务连败 2 次升级用户。
@@ -74,10 +75,11 @@ software-engineering/
 ├── references/
 │   ├── templates.md              # 各门禁文档 + pipeline.json + 项目 AGENTS.md 模板
 │   └── agent-protocol.md         # Agent 编排协议：上下文纪律、派发循环、隔离与整合
-├── assets/agents/                # 四类角色提示词模板（出厂正本）
+├── assets/agents/                # 五类角色提示词模板（出厂正本）
 │   ├── implementer.md
 │   ├── spec-reviewer.md
 │   ├── quality-reviewer.md
+│   ├── gate-reviewer.md
 │   └── explorer.md
 └── scripts/
     ├── check_gate.mjs            # 门禁机械校验器

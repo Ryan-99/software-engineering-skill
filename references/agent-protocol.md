@@ -11,6 +11,7 @@ SKILL.md 定义门禁与文档；本文件定义执行期的 Agent 编排细节�
 | `implementer.md` | 实现代理 | 每任务一个全新代理 |
 | `spec-reviewer.md` | 需求符合评审 | 实现报告后、质量评审前 |
 | `quality-reviewer.md` | 质量评审 | spec 评审通过后，评审 BASE..HEAD diff |
+| `gate-reviewer.md` | 门禁审核 | 门禁文档提交给人之前，四层初审+决策卡提炼 |
 | `explorer.md` | 勘察代理 | brownfield G2 前；任何大范围读码问题 |
 
 **首次调用物化**（EXEC 步骤 0，或用户说"先把 agent 建起来"）：
@@ -29,6 +30,7 @@ node ~/.agents/skills/software-engineering/scripts/scaffold_agents.mjs <项目�
 | 架构师 | 主会话 + 勘察代理 | 设计在主会话做；代码库勘察外包，结论落 ARCHITECTURE |
 | 开发工程师 | 实现代理 | 每任务一个新代理，提示词自包含 |
 | 评审 | 需求符合评审 + 质量评审两段 | 先对照规格逐条核，再看代码质量 |
+| 门禁审核 | gate-reviewer 代理 | 完整性/一致性/质量初审，人只看决策卡 |
 | 测试/QA | 机械门禁 + E2E 代理 | typecheck/lint/test/check_gate 可命令化；Web E2E 用 web-gui-tester |
 | 配置管理 | git + pipeline.json | commit 带任务编号；状态即刻落账 |
 | 运维/发布 | 用户 | L2 边界：对外发布只出方案等人执行 |
@@ -47,6 +49,18 @@ node ~/.agents/skills/software-engineering/scripts/scaffold_agents.mjs <项目�
 - **全量绿才算绿**：只跑自己写的那个测试文件绿 ≠ 全量绿；套件里任何失败（哪怕不是你造成的）必须在报告点名——漏报的红测试等于造假。
 - **先证据后断言**：宣称"完成/通过/修复"必须有本次会话新跑的命令输出为据；"应该没问题""看起来对了"都是违规表述。代理自述不算证据。
 - **根因先行**：修任何 bug 前先读错误全文、稳定复现、查最近变更；没完成根因调查不许提修复方案，猜着改 = 返工。
+
+## 门禁审核循环（人不动手的部分）
+
+原则：**质量归代理，方向归人**。人每包只花 30 秒看决策卡，不看半成品。
+
+1. 控制器写完门禁文档 → 跑 `check_gate.mjs`（机械层）。
+2. 机械过 → 按 `gate-reviewer.md` 派初审，附本包文档 + 上下游关联文档 + pipeline.json 现状。
+3. 审出问题 → 控制器回改 → 复审，循环到"可提交给人"（循环内不上人）。
+4. 通过 → 产出**决策卡**（≤10 行拍板点 + ≤3 个待答问题），连同本包文档路径打包向人提交。
+5. 确认落账：pipeline.json 对应 gate 写 `"agent_review": {"date","verdict","issues"}` + status=confirmed。
+
+问人纪律：只有"答案会改变方案走向"的问题才配进待答清单；查资料、读代码能自答的，代理查完再交。决策卡超 10 行 = 审核没做完，打回自己继续提炼。
 
 ## 派发循环（每任务）
 
@@ -91,7 +105,7 @@ node ~/.agents/skills/software-engineering/scripts/scaffold_agents.mjs <项目�
 
 ## 收尾整合（G4 前置）
 
-全任务完成 → 跑全量测试 → 向用户出三选一（整合决策归用户，L2）：
+全任务完成 → 跑全量测试 → 向用户出三选一（附控制器推荐项与一句话理由，人回数字即可；整合决策归用户，L2）：
 
 1. **本地合并回主干**：切回主干 → 合并 → **合并结果上复跑全量**（绿只证明它跑过的那棵树；合并结果红了就停下排查，分支与 worktree 原地保留——没推送过，本地可恢复）→ 绿了删除 feature 分支并清理 worktree。
 2. **推远端建 PR**：`git push -u origin <分支>`，本机有 gh 直接建 PR 并回报 URL，没有就把 forge 打印的创建链接给用户。**保留分支与 worktree**——PR 反馈要在上面继续改。
